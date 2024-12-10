@@ -1,12 +1,3 @@
-"""
-    1.导入包，设置随机种子保证论文可复现
-    2.以类的方式定义训练参数，并实例对象获取所有参数
-    3.定义CallBack类（重写 keras.callbacks.Callback）
-    4.定义处理数据集的函数
-    5.定义自己的模型,设置loss，优化器等，开始训练
-    6.绘图
-    7.预测
-"""
 import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
 from xgboost import plot_importance
