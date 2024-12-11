@@ -53,7 +53,7 @@ def preprocess():
                   'dst_host_same_src_port_rate',
                   'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',
                   'dst_host_srv_serror_rate', 'dst_host_rerror_rate',
-                  'dst_host_srv_rerror_rate', 'label']  # 42个特征列名
+                  'dst_host_srv_rerror_rate', 'label']  
     attack_type = {
         'normal': 'normal',
         'back': 'dos',
@@ -97,38 +97,29 @@ def preprocess():
         'xsnoop': 'r2l'
     }
     # df['label'] = df['label'].apply(lambda r: attack_type[r[:-1]])
-    # 划分成 2类,即 normal和 abnormal
     # df['label'] = df['label'].apply(lambda r: r[:] if r[:] == 'normal' else 'abnormal')
-    # 数值化非数值型的特征
+    
     le = LabelEncoder()
     df['protocol_type'] = le.fit_transform(df['protocol_type'])
     df['service'] = le.fit_transform(df['service'])
     df['flag'] = le.fit_transform(df['flag'])
     df['label'] = le.fit_transform(df['label'])
-    # 独热编码处理
+    
     # proc=pd.DataFrame(keras.utils.to_categorical(df['protocol_type'],num_classes=3))
     # service=pd.DataFrame(keras.utils.to_categorical(df['service'],num_classes=70)) ## 实际上只有66种
     # flag=pd.DataFrame(keras.utils.to_categorical(df['flag'],num_classes=11))
     # df=pd.concat([df,proc,service,flag],axis=1)
     # df=df.drop(labels=['protocol_type','flag','service'],axis=1)
-    # 划分数据集
+    
     Y=df['label']
     X=df.drop('label',axis=1)
 
     label = X.shape[1]
     X.columns=list(range(label))
-    # 在这里不加归一化
-    # 归一化：归一到(0,1)的范围
-    # for feature_name in range(label-1):
-    #     X[feature_name] = MinMaxScaler().fit_transform(X[feature_name].values.reshape(-1,1))
-    # 标准化：
-    # for feature_name in range(label-1):
-    #     X[feature_name]=StandardScaler().fit_transform(X[feature_name].values.reshape(-1,1))
-
-    # 需要划分训练集和验证集
+    
     x_train, x_test, y_train, y_test = train_test_split(X.values,Y.values,test_size=0.2,random_state=seed)
-    print('y_train类别的分布',Counter(y_train))
-    print('y_test类别的分布',Counter(y_test))
+    print('y_train:',Counter(y_train))
+    print('y_test:',Counter(y_test))
 
     # x_train=np.reshape(x_train,(-1,args.time_steps,x_train.shape[1]))# input_shape=[sample,timesteps,feature]
     # x_test=np.reshape(x_test,(-1,args.time_steps,x_test.shape[1]))
@@ -138,31 +129,17 @@ def preprocess():
 
 
 if __name__=='__main__':
-    """设置随机种子保证论文可复现"""
     seed = 42
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
     torch.cuda.manual_seed_all(seed)
     tf.random.set_seed(seed)
-    # 获取所有训练参数
     args = Args()
-    # 定义回调函数
-    # callbacks_list=[
-    #     keras.callbacks.EarlyStopping(
-    #         monitor='val_loss',
-    #         patience=args.patience # 5轮内不改善就中断
-    #     ),
-    #     keras.callbacks.ModelCheckpoint(
-    #         filepath=args.model_path,
-    #         monitor='val_loss',
-    #         save_best_only=True # 只保存最佳模型
-    #     )
-    # ]
-    # 对原始数据集进行处理
+    
     x_train, x_test, y_train, y_test=preprocess()
 
-    # 实例化模型，开始训练
+    
     feature_names = ['duration', 'protocol_type', 'service', 'flag', 'src_bytes','dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot','num_failed_logins', 'logged_in', 'num_compromised', 'root_shell','su_attempted', 'num_root', 'num_file_creations', 'num_shells','num_access_files', 'num_outbound_cmds', 'is_host_login','is_guest_login', 'count', 'srv_count', 'serror_rate','srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate','diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count','dst_host_srv_count', 'dst_host_same_srv_rate', 'dst_host_diff_srv_rate','dst_host_same_src_port_rate','dst_host_srv_diff_host_rate', 'dst_host_serror_rate','dst_host_srv_serror_rate', 'dst_host_rerror_rate','dst_host_srv_rerror_rate']
 
     dtrain = xgb.DMatrix(x_train, label=y_train, feature_names=feature_names)
@@ -182,7 +159,7 @@ if __name__=='__main__':
     precision = precision_score(y_test, y_pred, average='macro', zero_division=1)
     recall = recall_score(y_test, y_pred, average='macro', zero_division=1)
     f1 = f1_score(y_test, y_pred, average='macro', zero_division=1)
-    print("使用宏平均的PRF")
+
     print('Accuracy:{:.4f}'.format(accuracy))
     print('Precision:{:.4f}'.format(precision))
     print('Recall: {:.4f}'.format(recall))
